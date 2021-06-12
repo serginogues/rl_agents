@@ -16,7 +16,6 @@ import random
 import numpy as np
 import gym
 import BitFlipEnv
-from scipy.spatial.distance import euclidean
 
 SAVE_PATH = '/UM/RL/trained_agents/'
 EPOCHS = 80  # each EPOCH consists of CYCLES
@@ -25,7 +24,7 @@ EPISODES = 16
 STEPS = 50
 OPTIMIZATION_STEPS = 40
 BATCH_SIZE = 128
-MEMORY_SIZE = 1e10
+MEMORY_SIZE = 1e6
 DECAY_EPS = 0.95
 LR = 0.0001
 DISCOUNT_FACTOR = 0.98
@@ -49,7 +48,7 @@ def train_dqn_her(env_):
     # Initializes the DQN agent with  Hindsight Experience Replay
     agent = dqnHER.DQNAgentWithHER(learning_rate=LR, n_actions=env.action_space.n,
                                    input_dims=state_size, gamma=DISCOUNT_FACTOR,
-                                   epsilon=EPSILON, batch_size=BATCH_SIZE, memory_size=10000,
+                                   epsilon=EPSILON, batch_size=BATCH_SIZE, memory_size=int(MEMORY_SIZE),
                                    replace_network_count=50,
                                    checkpoint_dir=checkpoint_dir)
 
@@ -64,7 +63,6 @@ def train_dqn_her(env_):
                 # Sample a goal g and an initial state s0
                 state = env.reset()
                 goal = env.goal
-
                 done = False
                 episode_transitions = []
 

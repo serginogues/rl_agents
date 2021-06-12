@@ -113,8 +113,6 @@ class DQNAgentWithHER(object):
 
         self.q_eval.optimizer.step()
         self.decrement_epsilon()
-        """if episode > 0 and episode % 100 == 0:
-            print("Episode", episode, "Epsilon: ", self.epsilon)"""
         self.learn_steps_count += 1
 
     def save_model(self):

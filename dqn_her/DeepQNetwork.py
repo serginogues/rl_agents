@@ -22,6 +22,7 @@ class DeepQNetwork(nn.Module):
         self.device_type = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_type)
         self.to(self.device)
+        print(self.device)
 
         self.checkpoint_dir = checkpoint_dir
         self.checkpoint_name = os.path.join(checkpoint_dir, name)

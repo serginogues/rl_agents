@@ -7,7 +7,7 @@ import torch
 class DQNAgentWithHER(object):
     def __init__(self, learning_rate, n_actions, input_dims, gamma,
                  epsilon, batch_size, memory_size, replace_network_count,
-                 dec_epsilon=1e-5, min_epsilon=0.1, checkpoint_dir='/tmp/ddqn/'):
+                 dec_epsilon=1e-6, min_epsilon=0.1, checkpoint_dir='/tmp/ddqn/'):
         self.learning_rate = learning_rate
         self.n_actions = n_actions
         self.input_dims = input_dims
@@ -54,8 +54,7 @@ class DQNAgentWithHER(object):
         """
         Gives a sample experience from the hindsight experience replay memory
         """
-        state, action, reward, next_state, done, goal = self.experience_replay_memory.get_random_experience(
-            self.batch_size)
+        state, action, reward, next_state, done, goal = self.experience_replay_memory.get_random_experience(self.batch_size)
 
         t_state = torch.tensor(state).to(self.q_eval.device)
         t_action = torch.tensor(action).to(self.q_eval.device)
@@ -114,6 +113,8 @@ class DQNAgentWithHER(object):
 
         self.q_eval.optimizer.step()
         self.decrement_epsilon()
+        """if episode > 0 and episode % 100 == 0:
+            print("Episode", episode, "Epsilon: ", self.epsilon)"""
         self.learn_steps_count += 1
 
     def save_model(self):

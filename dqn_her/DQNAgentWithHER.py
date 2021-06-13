@@ -7,7 +7,7 @@ import torch
 class DQNAgentWithHER(object):
     def __init__(self, learning_rate, n_actions, input_dims, gamma,
                  epsilon, batch_size, memory_size, replace_network_count,
-                 dec_epsilon=1e-6, min_epsilon=0.1, checkpoint_dir='/tmp/ddqn/'):
+                 dec_epsilon=1e-6, min_epsilon=0.2, checkpoint_dir='/tmp/ddqn/'):
         self.learning_rate = learning_rate
         self.n_actions = n_actions
         self.input_dims = input_dims
@@ -94,21 +94,29 @@ class DQNAgentWithHER(object):
         self.q_eval.optimizer.zero_grad()
         self.replace_target_network()
 
+        # Sample minibatch of transitions
         state, action, reward, next_state, done, goal = self.get_sample_experience()
         # Gets the evenly spaced batches
         batches = np.arange(self.batch_size)
 
+        # current state
         concat_state_goal = torch.cat((state, goal), 1)
+        # next state
         concat_next_state_goal = torch.cat((next_state, goal), 1)
 
+        # q_value
         q_pred = self.q_eval.forward(concat_state_goal)[batches, action]
+        # q_value_next
         q_next = self.q_next.forward(concat_next_state_goal).max(dim=1)[0]
 
+        # y = r,                        if done
+        # y = r + gamma*q_value_next,   otherwise
         q_next[done] = 0.0
         q_target = reward + self.gamma * q_next
 
-        # Computes loss and performs backpropagation
+        # Computes loss between q_target and q_value_i
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
+        # backpropagation
         loss.backward()
 
         self.q_eval.optimizer.step()

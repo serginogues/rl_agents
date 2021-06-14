@@ -24,13 +24,13 @@ EPISODES = 16
 STEPS = 50
 OPTIMIZATION_STEPS = 40
 BATCH_SIZE = 128
-MEMORY_SIZE = 1e6
-DECAY_EPS = 1e-5  # 0.95
+MEMORY_SIZE = 1e5
+DECAY_EPS = 4e-5  # 0.95
 LR = 0.001
 DISCOUNT_FACTOR = 0.98
 EPSILON = 0.9
 n_goals = 4
-MIN_EPSILON = 0.1
+MIN_EPSILON = 0.2
 
 
 def test_dqn_her(env):
@@ -39,7 +39,7 @@ def test_dqn_her(env):
     # Initializes the DQN agent with  Hindsight Experience Replay
     agent = dqnHER.DQNAgentWithHER(learning_rate=LR, n_actions=env.action_space.n,
                                    input_dims=state_size, gamma=DISCOUNT_FACTOR,
-                                   epsilon=0.1, batch_size=BATCH_SIZE, memory_size=int(MEMORY_SIZE),
+                                   epsilon=0, batch_size=BATCH_SIZE, memory_size=int(MEMORY_SIZE),
                                    replace_network_count=50, dec_epsilon=DECAY_EPS,
                                    checkpoint_dir=checkpoint_dir, min_epsilon=MIN_EPSILON)
     agent.load_model()
@@ -48,17 +48,21 @@ def test_dqn_her(env):
     for episode in range(EPISODES):
         observation = env.reset()
         goal = env.goal
+        print("New episode-----------------------")
+        print("G: ", goal)
         for step in range(STEPS):
-            env.render()
+            print("S",step, observation)
             action = agent.choose_action(observation, goal)
             next_state, reward, done, info = env.step(action)
-            if done:
-                print("Episode finished after {} timesteps".format(step + 1))
-                success += 1
-                break
             observation = next_state
-    print("Win percentage of", success/EPISODES, "out of ", EPISODES)
-    env.close()
+            if done:
+                print("Episode finished after {} timesteps".format(step + 1), ", success: ", success, ", episodes: ", episode)
+                success += 1
+                print("G: ", goal)
+                print("S", step+1, observation)
+
+                break
+    print("Win percentage of", success*100/EPISODES, "% out of ", EPISODES)
 
 
 def train_dqn_her(env):
@@ -81,7 +85,7 @@ def train_dqn_her(env):
                                    input_dims=state_size, gamma=DISCOUNT_FACTOR,
                                    epsilon=EPSILON, batch_size=BATCH_SIZE, memory_size=int(MEMORY_SIZE),
                                    replace_network_count=50, dec_epsilon=DECAY_EPS,
-                                   checkpoint_dir=checkpoint_dir)
+                                   min_epsilon=MIN_EPSILON, checkpoint_dir=checkpoint_dir)
     for epoch in range(EPOCHS):
         for cycle in range(CYCLES):
             # for episode = 1, M do
@@ -169,4 +173,5 @@ if __name__ == '__main__':
     n_bits = 12
     env = BitFlipEnv.BitFlipEnv(n_bits)
     # env = gym.make('gym_robot_arm:robot-arm-v0')
-    train_dqn_her(env)
+    # train_dqn_her(env)
+    test_dqn_her(env)

@@ -14,10 +14,6 @@ class BitFlipEnv:
         self.goal = np.random.randint(2, size=self.n_bits)
         self.action_space = Discrete(len(self.state))
 
-    def render(self):
-        print("State: ", self.state)
-        print("Goal: ", self.goal)
-
     def reset(self):
         """
         Resets the environment with new state and goal

@@ -7,7 +7,7 @@ import torch
 class DQNAgentWithHER(object):
     def __init__(self, learning_rate, n_actions, input_dims, gamma,
                  epsilon, batch_size, memory_size, replace_network_count,
-                 dec_epsilon=1e-6, min_epsilon=0.2, checkpoint_dir='/tmp/ddqn/'):
+                 dec_epsilon, min_epsilon, checkpoint_dir='/tmp/ddqn/'):
         self.learning_rate = learning_rate
         self.n_actions = n_actions
         self.input_dims = input_dims
@@ -21,6 +21,7 @@ class DQNAgentWithHER(object):
         self.checkpoint_dir = checkpoint_dir
         self.action_indices = [i for i in range(n_actions)]
         self.learn_steps_count = 0
+        self.K = 1
 
         self.q_eval = dqn.DeepQNetwork(learning_rate=learning_rate, n_actions=n_actions,
                                        input_dims=2*input_dims, name='q_eval',
@@ -39,7 +40,8 @@ class DQNAgentWithHER(object):
         Decrements the epsilon after each step till it reaches minimum epsilon (0.1)
         epsilon = epsilon - decrement (default is 1e-5)
         """
-        self.epsilon = self.epsilon - self.dec_epsilon if self.epsilon > self.min_epsilon \
+        # self.epsilon = self.epsilon - self.dec_epsilon if self.epsilon > self.min_epsilon \
+        self.epsilon = 1/self.K if self.epsilon > self.min_epsilon \
             else self.min_epsilon
 
     def store_experience(self, state, action, reward, next_state, done, goal):
@@ -122,6 +124,7 @@ class DQNAgentWithHER(object):
         self.q_eval.optimizer.step()
         self.decrement_epsilon()
         self.learn_steps_count += 1
+        self.K += self.dec_epsilon
 
     def save_model(self):
         """

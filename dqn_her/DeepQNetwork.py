@@ -12,9 +12,9 @@ class DeepQNetwork(nn.Module):
     def __init__(self, learning_rate, n_actions, input_dims, checkpoint_dir, name):
         super(DeepQNetwork, self).__init__()
 
-        self.fc1 = nn.Linear(input_dims, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, n_actions)
+        self.fc1 = nn.Linear(input_dims, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, n_actions)
 
         self.optimizer = optim.RMSprop(self.parameters(), lr=learning_rate)
         self.loss = nn.MSELoss()

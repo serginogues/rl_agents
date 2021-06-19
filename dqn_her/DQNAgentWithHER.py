@@ -21,7 +21,7 @@ class DQNAgentWithHER(object):
         self.checkpoint_dir = checkpoint_dir
         self.action_indices = [i for i in range(n_actions)]
         self.learn_steps_count = 0
-        self.K = 1
+        self.K = 2
 
         self.q_eval = dqn.DeepQNetwork(learning_rate=learning_rate, n_actions=n_actions,
                                        input_dims=2*input_dims, name='q_eval',
@@ -34,6 +34,8 @@ class DQNAgentWithHER(object):
         self.experience_replay_memory = her.HindsightExperienceReplayMemory(memory_size=memory_size,
                                                                             input_dims=input_dims,
                                                                             n_actions=n_actions)
+
+        self.min_loss = 0
 
     def decrement_epsilon(self):
         """
@@ -94,6 +96,7 @@ class DQNAgentWithHER(object):
             return
 
         self.q_eval.optimizer.zero_grad()
+        self.q_next.optimizer.zero_grad()
         self.replace_target_network()
 
         # Sample minibatch of transitions
@@ -118,6 +121,8 @@ class DQNAgentWithHER(object):
 
         # Computes loss between q_target and q_value_i
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
+        self.min_loss = np.copy(loss.cpu().detach().numpy())
+
         # backpropagation
         loss.backward()
 

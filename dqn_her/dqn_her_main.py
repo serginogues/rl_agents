@@ -23,14 +23,14 @@ CYCLES = 50
 EPISODES = 16
 STEPS = 50
 OPTIMIZATION_STEPS = 40
-BATCH_SIZE = 128
-MEMORY_SIZE = 1e5
-DECAY_EPS = 4e-5  # 0.95
+BATCH_SIZE = 256
+MEMORY_SIZE = 1e6
+DECAY_EPS = 1e-5  # 0.95
 LR = 0.001
 DISCOUNT_FACTOR = 0.98
-EPSILON = 0.9
+EPSILON = 0.5
 n_goals = 4
-MIN_EPSILON = 0.2
+MIN_EPSILON = 0.1
 
 
 def test_dqn_her(env):
@@ -43,6 +43,7 @@ def test_dqn_her(env):
                                    replace_network_count=50, dec_epsilon=DECAY_EPS,
                                    checkpoint_dir=checkpoint_dir, min_epsilon=MIN_EPSILON)
     agent.load_model()
+    STEPS = state_size
     success = 0
     win_percent = []
     for episode in range(EPISODES):
@@ -51,7 +52,7 @@ def test_dqn_her(env):
         print("New episode-----------------------")
         print("G: ", goal)
         for step in range(STEPS):
-            print("S",step, observation)
+            print("S",step+1, observation)
             action = agent.choose_action(observation, goal)
             next_state, reward, done, info = env.step(action)
             observation = next_state
@@ -59,7 +60,7 @@ def test_dqn_her(env):
                 print("Episode finished after {} timesteps".format(step + 1), ", success: ", success, ", episodes: ", episode)
                 success += 1
                 print("G: ", goal)
-                print("S", step+1, observation)
+                print("S", step, observation)
 
                 break
     print("Win percentage of", success*100/EPISODES, "% out of ", EPISODES)
@@ -72,11 +73,7 @@ def train_dqn_her(env):
 
     win_percent = []
     success = 0
-
-    if "BitFlipEnv" in str(env):
-        STEPS = state_size
-    else:
-        STEPS = 50
+    STEPS = state_size
 
     checkpoint_dir = os.path.join(os.getcwd(), SAVE_PATH)
 
@@ -84,10 +81,11 @@ def train_dqn_her(env):
     agent = dqnHER.DQNAgentWithHER(learning_rate=LR, n_actions=env.action_space.n,
                                    input_dims=state_size, gamma=DISCOUNT_FACTOR,
                                    epsilon=EPSILON, batch_size=BATCH_SIZE, memory_size=int(MEMORY_SIZE),
-                                   replace_network_count=50, dec_epsilon=DECAY_EPS,
+                                   replace_network_count=5000, dec_epsilon=DECAY_EPS,
                                    min_epsilon=MIN_EPSILON, checkpoint_dir=checkpoint_dir)
     for epoch in range(EPOCHS):
         for cycle in range(CYCLES):
+            print(cycle)
             # for episode = 1, M do
             for episode in range(EPISODES):
 
@@ -96,6 +94,7 @@ def train_dqn_her(env):
                 goal = env.goal
                 done = False
                 episode_transitions = []
+                loss_average = 0
 
                 # for t = 0, T − 1 do
                 for p in range(STEPS):
@@ -115,42 +114,42 @@ def train_dqn_her(env):
                             success += 1
                             break
 
-                if not done:
-                    # for t = 0, T − 1 do
-                    for current_state_idx, transition in enumerate(episode_transitions):
-                        # rt := r(st, at, g)
-                        state_, action_, new_reward, next_state_, info_ = transition
+                # for t = 0, T − 1 do
+                for current_state_idx, transition in enumerate(episode_transitions):
+                    # rt := r(st, at, g)
+                    state_, action_, new_reward, next_state_, info_ = transition
 
-                        # Sample a set of additional goals for replay G := S(current episode)
-                        # for g' ∈ G do
-                        for _ in range(n_goals):
-                            transition = random.choice(episode_transitions[current_state_idx:])
-                            new_goal = transition[0]  # set state as new goal
-                            # r':= r(st, at, g')
+                    # Sample a set of additional goals for replay G := S(current episode)
+                    # for g' ∈ G do
+                    for _ in range(n_goals):
+                        transition = random.choice(episode_transitions[current_state_idx:])
+                        new_goal = transition[0]  # set state as new goal
+                        # r':= r(st, at, g')
 
-                            #TODO: need to define evaluate() for each environment you try (see BitFlipEnv)
-                            if "BitFlipEnv" in str(env):
-                                new_reward, new_done = env.evaluate(action_, state_, new_goal)
-                            elif "RobotArmEnv" in str(env):
-                                new_reward, new_done = env.evaluate(new_goal, info_)
-                            else:
-                                new_reward, new_done = env.evaluate(action_, state_, new_goal)
+                        #TODO: need to define evaluate() for each environment you try (see BitFlipEnv)
+                        new_reward, new_done = env.evaluate(action_, state_, new_goal)
 
-                            # Store the transition (st||g', at, r', st+1||g') in R
-                            agent.store_experience(state, action_, new_reward, next_state_, new_done, new_goal)
+                        # Store the transition (st||g', at, r', st+1||g') in R
+                        agent.store_experience(state_, action_, new_reward, next_state_, new_done, new_goal)
 
-            for s in range(OPTIMIZATION_STEPS):
-                agent.learn()
+                for s in range(OPTIMIZATION_STEPS):
+                    agent.learn()
+                    loss_average += agent.min_loss
+
+                """print("Episode", episode, "Cycle", cycle, "average loss: ", loss_average / OPTIMIZATION_STEPS)
+                print("Epsilon: ", agent.epsilon)"""
 
         # Average during EPOCH
         print("Epoch", epoch)
-        print('success rate for last 800 episodes after', (epoch+1)*CYCLES*EPISODES, ':', success / 8, ", current epsilon: ", agent.epsilon)
+        print('success rate for last 800 episodes after', (epoch+1)*CYCLES*EPISODES, ':', success / 8, "%")
+        print("Loss: ", agent.min_loss)
+        print("Epsilon: ", agent.epsilon)
         if len(win_percent) > 0 and (success / 800) > win_percent[len(win_percent) - 1]:
             agent.save_model()
         epsilon_history.append(agent.epsilon)
         epochs.append(epoch)
         win_percent.append(success / 800)
-        if success / 8 == 100 and agent.epsilon < 0.4:
+        if success / 8 > 85 and agent.epsilon < 0.4:
             break
         success = 0
 
@@ -170,8 +169,8 @@ def train_dqn_her(env):
 
 
 if __name__ == '__main__':
-    n_bits = 12
+    n_bits = 26
     env = BitFlipEnv.BitFlipEnv(n_bits)
     # env = gym.make('gym_robot_arm:robot-arm-v0')
-    # train_dqn_her(env)
-    test_dqn_her(env)
+    train_dqn_her(env)
+    # test_dqn_her(env)

@@ -1,5 +1,5 @@
-import dqn_her.DeepQNetwork as dqn
-import dqn_her.HERMemory as her
+import dqn_her_bitflip.DeepQNetwork as dqn
+import dqn_her_bitflip.HERMemory as her
 import numpy as np
 import torch
 
@@ -21,7 +21,7 @@ class DQNAgentWithHER(object):
         self.checkpoint_dir = checkpoint_dir
         self.action_indices = [i for i in range(n_actions)]
         self.learn_steps_count = 0
-        self.K = 2
+        self.K = 1 / self.epsilon
 
         self.q_eval = dqn.DeepQNetwork(learning_rate=learning_rate, n_actions=n_actions,
                                        input_dims=2*input_dims, name='q_eval',

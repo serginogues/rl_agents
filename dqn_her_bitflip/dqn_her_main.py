@@ -11,17 +11,14 @@ Define SAVE_PATH before running
 """
 import os
 import matplotlib.pyplot as plt
-from dqn_her import DQNAgentWithHER as dqnHER
+from dqn_her_bitflip import DQNAgentWithHER as dqnHER, BitFlipEnv
 import random
-import numpy as np
-import gym
-import BitFlipEnv
 
 SAVE_PATH = '/UM/RL/trained_agents/'
 EPOCHS = 250  # each EPOCH consists of CYCLES
 CYCLES = 50
 EPISODES = 16
-STEPS = 50
+STEPS = 70
 OPTIMIZATION_STEPS = 40
 BATCH_SIZE = 256
 MEMORY_SIZE = 1e6
@@ -169,7 +166,7 @@ def train_dqn_her(env):
 
 
 if __name__ == '__main__':
-    n_bits = 26
+    n_bits = 22
     env = BitFlipEnv.BitFlipEnv(n_bits)
     # env = gym.make('gym_robot_arm:robot-arm-v0')
     train_dqn_her(env)

@@ -5,7 +5,7 @@ class HindsightExperienceReplayMemory(object):
     """
     Hindsight Experience replay - Takes size, input dimensions and number of actions as parameters
     """
-    def __init__(self, memory_size, input_dims, n_actions):
+    def __init__(self, memory_size, input_dims, n_actions, n_goal):
         super(HindsightExperienceReplayMemory, self).__init__()
         self.max_mem_size = memory_size
         self.counter = 0
@@ -16,7 +16,7 @@ class HindsightExperienceReplayMemory(object):
         self.reward_memory = np.zeros(memory_size, dtype=np.float32)
         self.action_memory = np.zeros((memory_size, n_actions), dtype=np.float32)
         self.terminal_memory = np.zeros(memory_size, dtype=bool)
-        self.goal_memory = np.zeros((memory_size, input_dims), dtype=np.float32)
+        self.goal_memory = np.zeros((memory_size, n_goal), dtype=np.float32)
 
     def add_experience(self, state, action, reward, next_state, done, goal):
         """
